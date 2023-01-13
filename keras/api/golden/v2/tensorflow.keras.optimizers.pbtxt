@@ -58,14 +58,14 @@ tf_module {
   }
   member_method {
     name: "deserialize"
-    argspec: "args=[\'config\', \'custom_objects\'], varargs=None, keywords=kwargs, defaults=[\'None\'], "
+    argspec: "args=[\'config\', \'custom_objects\', \'use_legacy_format\'], varargs=None, keywords=kwargs, defaults=[\'None\', \'False\'], "
   }
   member_method {
     name: "get"
-    argspec: "args=[\'identifier\'], varargs=None, keywords=kwargs, defaults=None"
+    argspec: "args=[\'identifier\', \'use_legacy_format\'], varargs=None, keywords=kwargs, defaults=[\'False\'], "
   }
   member_method {
     name: "serialize"
-    argspec: "args=[\'optimizer\'], varargs=None, keywords=None, defaults=None"
+    argspec: "args=[\'optimizer\', \'use_legacy_format\'], varargs=None, keywords=None, defaults=[\'False\'], "
   }
 }

@@ -56,6 +56,7 @@ from keras.optimizers.legacy.rmsprop import RMSprop
 from keras.optimizers.optimizer_v1 import Optimizer
 from keras.optimizers.optimizer_v1 import TFOptimizer
 from keras.optimizers.schedules import learning_rate_schedule
+from keras.saving.legacy import serialization as legacy_serialization
 from keras.saving.legacy.serialization import deserialize_keras_object
 from keras.saving.legacy.serialization import serialize_keras_object
 
@@ -64,7 +65,7 @@ from tensorflow.python.util.tf_export import keras_export
 
 
 @keras_export("keras.optimizers.serialize")
-def serialize(optimizer):
+def serialize(optimizer, use_legacy_format=False):
     """Serialize the optimizer configuration to JSON compatible python dict.
 
     The configuration can be used for persistence and reconstruct the
@@ -81,11 +82,13 @@ def serialize(optimizer):
     Returns:
       Python dict which contains the configuration of the input optimizer.
     """
+    if use_legacy_format:
+        return legacy_serialization.serialize_keras_object(optimizer)
     return serialize_keras_object(optimizer)
 
 
 @keras_export("keras.optimizers.deserialize")
-def deserialize(config, custom_objects=None, **kwargs):
+def deserialize(config, custom_objects=None, use_legacy_format=False, **kwargs):
     """Inverse of the `serialize` function.
 
     Args:
@@ -158,6 +161,15 @@ def deserialize(config, custom_objects=None, **kwargs):
     # Make deserialization case-insensitive for built-in optimizers.
     if config["class_name"].lower() in all_classes:
         config["class_name"] = config["class_name"].lower()
+
+    if use_legacy_format:
+        return legacy_serialization.deserialize_keras_object(
+            config,
+            module_objects=all_classes,
+            custom_objects=custom_objects,
+            printable_module_name="optimizer",
+        )
+
     return deserialize_keras_object(
         config,
         module_objects=all_classes,
@@ -229,7 +241,7 @@ def convert_to_legacy_optimizer(optimizer):
 
 
 @keras_export("keras.optimizers.get")
-def get(identifier, **kwargs):
+def get(identifier, use_legacy_format=False, **kwargs):
     """Retrieves a Keras Optimizer instance.
 
     Args:
@@ -267,11 +279,17 @@ def get(identifier, **kwargs):
         return opt
     elif isinstance(identifier, dict):
         return deserialize(
-            identifier, use_legacy_optimizer=use_legacy_optimizer
+            identifier,
+            use_legacy_optimizer=use_legacy_optimizer,
+            use_legacy_format=use_legacy_format,
         )
     elif isinstance(identifier, str):
         config = {"class_name": str(identifier), "config": {}}
-        return deserialize(config, use_legacy_optimizer=use_legacy_optimizer)
+        return deserialize(
+            config,
+            use_legacy_optimizer=use_legacy_optimizer,
+            use_legacy_format=use_legacy_format,
+        )
     else:
         raise ValueError(
             f"Could not interpret optimizer identifier: {identifier}"

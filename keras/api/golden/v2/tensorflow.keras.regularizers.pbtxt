@@ -34,11 +34,11 @@ tf_module {
   }
   member_method {
     name: "deserialize"
-    argspec: "args=[\'config\', \'custom_objects\'], varargs=None, keywords=None, defaults=[\'None\'], "
+    argspec: "args=[\'config\', \'custom_objects\'], varargs=None, keywords=kwargs, defaults=[\'None\'], "
   }
   member_method {
     name: "get"
-    argspec: "args=[\'identifier\'], varargs=None, keywords=None, defaults=None"
+    argspec: "args=[\'identifier\'], varargs=None, keywords=kwargs, defaults=None"
   }
   member_method {
     name: "l1_l2"
@@ -46,6 +46,6 @@ tf_module {
   }
   member_method {
     name: "serialize"
-    argspec: "args=[\'regularizer\'], varargs=None, keywords=None, defaults=None"
+    argspec: "args=[\'regularizer\'], varargs=None, keywords=kwargs, defaults=None"
   }
 }
