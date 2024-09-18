@@ -23,7 +23,11 @@ from keras.src.backend.tensorflow.core import convert_to_tensor
 from keras.src.backend.tensorflow.core import shape as shape_op
 
 
-@sparse.elementwise_binary_union(tf.sparse.add)
+@sparse.elementwise_binary_union(
+    sparse_sparse_op=tf.sparse.add,
+    sparse_dense_op=tf.sparse.add,
+    index_slices_dense_op=sparse.index_slices_dense_add,
+)
 def add(x1, x2):
     if not isinstance(x1, (int, float)):
         x1 = convert_to_tensor(x1)
@@ -331,7 +335,11 @@ def einsum(subscripts, *operands, **kwargs):
     return tf.cast(result, result_dtype)
 
 
-@sparse.elementwise_binary_union(sparse.sparse_subtract)
+@sparse.elementwise_binary_union(
+    sparse_sparse_op=sparse.sparse_subtract,
+    sparse_dense_op=sparse.sparse_subtract,
+    index_slices_dense_op=sparse.index_slices_dense_subtract,
+)
 def subtract(x1, x2):
     if not isinstance(x1, (int, float)):
         x1 = convert_to_tensor(x1)
@@ -1505,7 +1513,7 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
     return tf.pow(tf.cast(base, result.dtype), result)
 
 
-@sparse.elementwise_binary_union(tf.sparse.maximum, densify_mixed=True)
+@sparse.elementwise_binary_union(sparse_sparse_op=tf.sparse.maximum)
 def maximum(x1, x2):
     if not isinstance(x1, (int, float)):
         x1 = convert_to_tensor(x1)
@@ -1558,7 +1566,7 @@ def min(x, axis=None, keepdims=False, initial=None):
         return tf.reduce_min(x, axis=axis, keepdims=keepdims)
 
 
-@sparse.elementwise_binary_union(tf.sparse.minimum, densify_mixed=True)
+@sparse.elementwise_binary_union(sparse_sparse_op=tf.sparse.minimum)
 def minimum(x1, x2):
     if not isinstance(x1, (int, float)):
         x1 = convert_to_tensor(x1)

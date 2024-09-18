@@ -7,6 +7,7 @@ from keras.src.backend.common import KerasVariable
 from keras.src.backend.tensorflow.trackable import KerasAutoTrackable
 from keras.src.optimizers import base_optimizer
 
+READ_VALUE=True
 
 class TFOptimizer(KerasAutoTrackable, base_optimizer.BaseOptimizer):
     """A class for Tensorflow specific optimizer logic.
@@ -52,7 +53,7 @@ class TFOptimizer(KerasAutoTrackable, base_optimizer.BaseOptimizer):
         if isinstance(value, tf.IndexedSlices):
             variable.scatter_update(value)
         else:
-            variable.assign(value)
+            variable.assign(value, read_value=READ_VALUE)
 
     def assign_add(self, variable, value):
         if isinstance(variable, KerasVariable):
@@ -61,7 +62,7 @@ class TFOptimizer(KerasAutoTrackable, base_optimizer.BaseOptimizer):
         if isinstance(value, tf.IndexedSlices):
             variable.scatter_add(value)
         else:
-            variable.assign_add(value)
+            variable.assign_add(value, read_value=READ_VALUE)
 
     def assign_sub(self, variable, value):
         if isinstance(variable, KerasVariable):
@@ -70,7 +71,7 @@ class TFOptimizer(KerasAutoTrackable, base_optimizer.BaseOptimizer):
         if isinstance(value, tf.IndexedSlices):
             variable.scatter_sub(value)
         else:
-            variable.assign_sub(value)
+            variable.assign_sub(value, read_value=READ_VALUE)
 
     def _var_key(self, variable):
         if isinstance(variable, backend.Variable):
