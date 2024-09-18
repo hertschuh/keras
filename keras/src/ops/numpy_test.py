@@ -4397,6 +4397,77 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(knp.trunc(x), np.trunc(x))
         self.assertAllClose(knp.Trunc()(x), np.trunc(x))
 
+    @parameterized.named_parameters(
+        named_product(
+            return_options=((False, False, False), (True, False, False), (False, True, False), (False, False, True), (True, True, True)),
+            axis=(0,),
+            size=(None, 3, 10),
+            fill_value=(None, -1),
+        )
+    )
+    def test_unique(self, return_options, axis, size, fill_value):
+        return_index, return_inverse, return_counts = return_options
+        output_names = ["unique values"]
+        if return_index:
+            output_names.append("index")
+        if return_inverse:
+            output_names.append("inverse")
+        if return_counts:
+            output_names.append("counts")
+
+        x = np.array([2, 1, 6, 4, 2, 3, 2])
+
+        output_np = np.unique(
+            x,
+            return_index=return_index,
+            return_inverse=return_inverse,
+            return_counts=return_counts,
+            axis=axis,
+        )
+        print("output_np", output_np)
+        output_np = list(output_np) if any(return_options) else [output_np]
+        if size is not None:
+            values_count = output_np[0].shape[0]
+            if size < values_count:
+                output_np = [v[0:size] if v.shape[0] == values_count else v for v in output_np]
+            if size > values_count:
+                for i, v in enumerate(output_np):
+                    if v.shape[0] == values_count:
+                        if i == 0:
+                            fill = fill_value if fill_value is not None else v[0]
+                        elif i == 1 and return_index:
+                            fill = v[0]
+                        else:
+                            fill = 0
+                        output_np[i] = np.concatenate((v, np.array([fill] * (size - values_count))))
+
+        output = knp.unique(
+            x,
+            return_index=return_index,
+            return_inverse=return_inverse,
+            return_counts=return_counts,
+            axis=axis,
+            size=size,
+            fill_value=fill_value,
+        )
+        print("output", output)
+        output = output if any(return_options) else [output]
+        for v, v_np, name in zip(output, output_np, output_names):
+            self.assertAllClose(v, v_np, msg=name + " mismatch")
+
+        output = knp.Unique(
+            return_index=return_index,
+            return_inverse=return_inverse,
+            return_counts=return_counts,
+            axis=axis,
+            size=size,
+            fill_value=fill_value,
+        )(x)
+        print("output", output)
+        output = output if any(return_options) else [output]
+        for v, v_np, name in zip(output, output_np, output_names):
+            self.assertAllClose(v, v_np, msg=name + " mismatch")
+
     def test_vstack(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [6, 5, 4]])

@@ -5611,6 +5611,106 @@ def trunc(x):
     return backend.numpy.trunc(x)
 
 
+class Unique(Operation):
+    def __init__(
+        self,
+        return_index=False,
+        return_inverse=False,
+        return_counts=False,
+        axis=None,
+        *,
+        equal_nan=True,
+        size=None,
+        fill_value=None,
+    ):
+        self.return_index = return_index
+        self.return_inverse = return_inverse
+        self.return_counts = return_counts
+        self.axis = axis
+        self.equal_nan = equal_nan
+        self.size = size
+        self.fill_value = fill_value
+
+    def call(self, x):
+        return backend.numpy.unique(
+            x,
+            return_index=self.return_index,
+            return_inverse=self.return_inverse,
+            return_counts=self.return_counts,
+            axis=self.axis,
+            equal_nan=self.equal_nan,
+            size=self.size,
+            fill_value=self.fill_value,
+        )
+
+    def compute_output_spec(self, x1, x2):
+        raise NotImplementedError("TODO")
+        dtype = dtypes.result_type(
+            getattr(x1, "dtype", type(x1)),
+            getattr(x2, "dtype", type(x2)),
+        )
+        return KerasTensor([], dtype=dtype)
+
+
+@keras_export(["keras.ops.unique", "keras.ops.numpy.unique"])
+def unique(
+    x,
+    return_index=False,
+    return_inverse=False,
+    return_counts=False,
+    axis=None,
+    *,
+    equal_nan=True,
+    size=None,
+    fill_value=None,
+):
+    """Find the unique elements of an array.
+
+    Returns the sorted unique elements of an array. There are three optional
+    outputs in addition to the unique elements:
+    - the indices of the input array that give the unique values
+    - the indices of the unique array that reconstruct the input array
+    - the number of times each unique value comes up in the input array
+
+    Args:
+        x: Input tensor. Unless axis is specified, this will be flattened if it
+           is not already 1-D.
+        TODO
+
+    Returns:
+        - unique: The sorted unique values.
+        - unique_indices: Optional. The indices of the first occurrences of the
+                          unique values in the original tensor. Only provided if
+                          `return_index` is True.
+        - unique_inverse: Optional. The indices to reconstruct the original
+                          tensor from the unique tensor. Only provided if
+                          `return_inverse` is True.
+        - unique_counts: Optional. The number of times each of the unique values
+                         comes up in the original tensor. Only provided if
+                         `return_counts` is True.
+    """
+    if any_symbolic_tensors((x,)):
+        return Unique(
+            return_index=return_index,
+            return_inverse=return_inverse,
+            return_counts=return_counts,
+            axis=axis,
+            equal_nan=equal_nan,
+            size=size,
+            fill_value=fill_value,
+        ).symbolic_call(x)
+    return backend.numpy.unique(
+        x,
+        return_index=return_index,
+        return_inverse=return_inverse,
+        return_counts=return_counts,
+        axis=axis,
+        equal_nan=equal_nan,
+        size=size,
+        fill_value=fill_value,
+    )
+
+
 class Vdot(Operation):
     def call(self, x1, x2):
         return backend.numpy.vdot(x1, x2)

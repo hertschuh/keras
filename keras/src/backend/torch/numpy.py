@@ -1463,6 +1463,20 @@ def trunc(x):
     return torch.trunc(x)
 
 
+def unique(
+    x,
+    return_index=False,
+    return_inverse=False,
+    return_counts=False,
+    axis=None,
+    *,
+    equal_nan=True,
+    size=None,
+    fill_value=None,
+):
+    output = torch.unique(x, sorted=True, return_inverse=return_inverse, return_counts=return_counts, dim=axis)
+
+
 def vdot(x1, x2):
     x1 = convert_to_tensor(x1)
     x2 = convert_to_tensor(x2)

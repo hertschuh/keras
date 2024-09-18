@@ -2239,6 +2239,75 @@ def trunc(x):
     return tf.where(x < 0, tf.math.ceil(x), tf.math.floor(x))
 
 
+def unique(
+    x,
+    return_index=False,
+    return_inverse=False,
+    return_counts=False,
+    axis=None,
+    *,
+    equal_nan=True,
+    size=None,
+    fill_value=None,
+):
+    if return_counts:
+        values, inverse, counts = tf.unique_with_counts(x)
+        index = None
+    else:
+        values, inverse = tf.unique(x)
+        index, counts = None, None
+
+    sort_order = tf.argsort(values)
+    values = tf.gather(values, sort_order)
+
+    if return_index:
+        x_len = x.shape[0]
+        bshape = (values.shape[0], x_len)
+        index = tf.reduce_min(
+            tf.where(
+                tf.equal(
+                    tf.broadcast_to(tf.expand_dims(values, axis=1), bshape),
+                    tf.broadcast_to(tf.expand_dims(x, axis=0), bshape),
+                ),
+                tf.broadcast_to(tf.expand_dims(tf.range(x_len), 0), bshape),
+                x_len,
+            ),
+            axis=1,
+        )
+    if return_counts:
+        counts = tf.gather(counts, sort_order)
+    if return_inverse:
+        inverse = tf.gather(sort_order, inverse)
+    else:
+        inverse = None
+
+    if size is not None:
+        # TODO assert 0 -1
+        if axis is None:
+            axis = 0
+        values_count = tf.shape(values)[axis]
+        if tf.greater(values_count, size):
+            values = values[0:size]
+            if return_index:
+                index = index[0:size]
+            if return_counts:
+                counts = counts[0:size]
+
+        if tf.less(values_count, size):
+            padding = tf.convert_to_tensor([[0, size - values_count]])
+            if fill_value is not None:
+                values = tf.pad(values, padding, constant_values=fill_value)
+            else:
+                values = tf.pad(values, padding, constant_values=values[0])
+            if return_index:
+                index = tf.pad(index, padding, constant_values=index[0])
+            if return_counts:
+                counts = tf.pad(counts, padding)
+
+    output = [v for v in (values, index, inverse, counts) if v is not None]
+    return output[0] if len(output) == 1 else output
+
+
 def vdot(x1, x2):
     x1 = convert_to_tensor(x1)
     x2 = convert_to_tensor(x2)

@@ -989,6 +989,67 @@ def trunc(x):
     return np.trunc(x)
 
 
+def unique(
+    x,
+    return_index=False,
+    return_inverse=False,
+    return_counts=False,
+    axis=None,
+    *,
+    equal_nan=True,
+    size=None,
+    fill_value=None,
+):
+    output = np.unique(
+        x,
+        return_index=return_index,
+        return_inverse=return_inverse,
+        return_counts=return_counts,
+        axis=axis,
+        equal_nan=equal_nan,
+    )
+    if size is None:
+        return output
+
+    axis = axis if axis is not None else 0
+    output = list(output) if return_index or return_inverse or return_counts else [output]
+    counts = output.pop() if return_counts else None
+    inverse = output.pop() if return_inverse else None
+    index = output.pop() if return_index else None
+    values = output.pop()
+
+    values_count = values.shape[axis]
+    rank = len(values.shape)
+    if values_count > size:
+        indices = [slice(None) for _ in range(rank)]
+        indices[axis] = slice(0, size)
+        values = values.__getitem__(tuple(indices))
+        if return_index:
+            index = index.__getitem__(tuple(indices))
+        if return_counts:
+            counts = counts.__getitem__(tuple(indices))
+    elif values_count < size:
+        padding = [(0, 0) for _ in range(rank)]
+        padding[axis] = (0, size - values_count)
+        indices = [slice(None) for _ in range(rank)]
+        indices[axis] = slice(1)
+        if fill_value is not None:
+            values = np.pad(values, padding, constant_values=fill_value)
+        else:
+            pad_values = values.__getitem__(tuple(indices))
+            pad_values = np.repeat(pad_values, size - values_count, axis=axis)
+            values = np.concatenate((values, pad_values), axis=axis)
+        if return_index:
+            pad_values = index.__getitem__(tuple(indices))
+            pad_values = np.repeat(pad_values, size - values_count, axis=axis)
+            index = np.concatenate((index, pad_values), axis=axis)
+        if return_counts:
+            counts = np.pad(counts, padding)
+
+    output = [v for v in (values, index, inverse, counts) if v is not None]
+    return output[0] if len(output) == 1 else output
+
+
 def vdot(x1, x2):
     x1 = convert_to_tensor(x1)
     x2 = convert_to_tensor(x2)
