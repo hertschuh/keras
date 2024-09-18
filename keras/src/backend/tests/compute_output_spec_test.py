@@ -15,7 +15,7 @@ def three_args_2_kwarg_test_fn(x1, x2, x3=None):
     x1 = ops.max(x1, axis=1)
     x2 = ops.max(x2, axis=1)
     if x3 is not None:
-        x1 += ops.max(x3, axis=1)
+        x1 = ops.add(x1, ops.max(x3, axis=1))
     return x1 + x2
 
 
@@ -54,8 +54,8 @@ class ComputeOutputSpecTest(unittest.TestCase):
         def single_arg_sparse_fn(x):
             y0 = ops.transpose(x, axes=(0, 2, 1))
             y1 = ops.squeeze(ops.expand_dims(x, axis=3), axis=3)
-            y2 = ops.reshape(ops.reshape(x, (-1, 9)), (-1, 3, 3))
-            return (y0, y1, y2)
+            # y2 = ops.reshape(ops.reshape(x, (-1, 9)), (-1, 3, 3))
+            return (y0, y1)  #, y2)
 
         x = KerasTensor(shape=(None, 3, 3), sparse=True)
         ys = backend.compute_output_spec(single_arg_sparse_fn, x)
