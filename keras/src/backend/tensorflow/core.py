@@ -18,6 +18,7 @@ from keras.src.backend.tensorflow.sparse import sparse_to_dense
 from keras.src.utils.naming import auto_name
 
 SUPPORTS_SPARSE_TENSORS = True
+SUPPORTS_RAGGED_TENSORS = True
 
 
 class Variable(
@@ -111,9 +112,11 @@ class Variable(
         return self.value._write_object_proto(proto, options)
 
 
-def convert_to_tensor(x, dtype=None, sparse=None):
+def convert_to_tensor(x, dtype=None, sparse=None, ragged=None):
     if isinstance(x, tf.SparseTensor) and sparse is not None and not sparse:
         x = sparse_to_dense(x)
+    if isinstance(x, tf.RaggedTensor) and ragged is not None and not ragged:
+        x = x.to_tensor()
     if dtype is not None:
         dtype = standardize_dtype(dtype)
     if not tf.is_tensor(x):

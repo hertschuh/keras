@@ -4680,12 +4680,24 @@ def create_indexed_slices(x, indices_from=None, start=0, delta=2):
         return jax_sparse.BCOO((values, indices), shape=x.shape)
 
 
+def create_ragged_tensor(x, row_lengths_from=None, start=0, delta=2):
+    import tensorflow as tf
+
+    if row_lengths_from is not None:
+        row_lengths = row_lengths_from.row_lengths(axis=-1)
+    else:
+        max_length = x.shape[1]
+        row_lengths = [(-1 - i) % max_length for i in range(x.shape[0])]
+
+    return tf.RaggedTensor.from_tensor(x, lengths=row_lengths)
+
+
 def get_sparseness_combinations(dense_to_sparse_fn):
     x = np.array([[1, 2, 3], [3, 2, 1]])
     y = np.array([[4, 5, 6], [3, 2, 1]])
     scalar = backend.convert_to_tensor(2)
     x_sp = dense_to_sparse_fn(x)
-    y_sp = dense_to_sparse_fn(y, indices_from=x_sp)
+    y_sp = dense_to_sparse_fn(y, x_sp)
     x_sp_sup = dense_to_sparse_fn(x, start=0, delta=1)
     y_sp_dis = dense_to_sparse_fn(y, start=1)
     y_sp_sup = dense_to_sparse_fn(y, start=0, delta=1)
@@ -4705,7 +4717,12 @@ def get_sparseness_combinations(dense_to_sparse_fn):
 
 def sparseness(x):
     if isinstance(x, KerasTensor):
-        return "sparse" if x.sparse else "dense"
+        if x.sparse:
+            return "sparse"
+        elif x.ragged:
+            return "ragged"
+        else:
+            return "dense"
     elif x.__class__.__name__ == "BCOO":
         if x.n_dense > 0:
             return "slices"
@@ -4715,6 +4732,8 @@ def sparseness(x):
         return "sparse"
     elif x.__class__.__name__ == "IndexedSlices":
         return "slices"
+    elif x.__class__.__name__ == "RaggedTensor":
+        return "ragged"
     elif not hasattr(x, "shape") or not x.shape:
         return "scalar"
     else:
@@ -4980,6 +4999,22 @@ class SparseTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(op_function(x), np_op(x_np))
         self.assertAllClose(op_class()(x), np_op(x_np))
 
+    @parameterized.named_parameters(DENSIFYING_UNARY_OPS_TESTS)
+    def test_densifying_unary_ragged_correctness(
+        self, op_function, op_class, np_op
+    ):
+        # Note that these ops do not densify ragged tensors.
+        x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
+        x = create_ragged_tensor(x)
+        x_np = backend.convert_to_numpy(x)
+        # Apply np_op replace values outside of ragged lengths with zeros.
+        result = backend.convert_to_numpy(create_ragged_tensor(np_op(x_np), x))
+
+        self.assertAllClose(op_function(x), result)
+        self.assertSameSparseness(op_function(x), x)
+        self.assertAllClose(op_class()(x), result)
+        self.assertSameSparseness(op_class()(x), x)
+
     @parameterized.named_parameters(ELEMENTWISE_UNARY_OPS_TESTS)
     def test_elementwise_unary_sparse_correctness(
         self, op_function, op_class, np_op
@@ -5012,6 +5047,22 @@ class SparseTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(op_class()(x), np_op(x_np))
         self.assertSameSparseness(op_class()(x), x)
 
+    @parameterized.named_parameters(ELEMENTWISE_UNARY_OPS_TESTS)
+    def test_elementwise_unary_ragged_correctness(
+        self, op_function, op_class, np_op
+    ):
+        if op_function.__name__ in ("conj", "conjugate", "imag", "real"):
+            x = np.array([[1 + 1j, 2 + 2j, 3 + 3j], [3 + 3j, 2 + 2j, 1 + 1j]])
+        else:
+            x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
+        x = create_ragged_tensor(x)
+        x_np = backend.convert_to_numpy(x)
+
+        self.assertAllClose(op_function(x), np_op(x_np))
+        self.assertSameSparseness(op_function(x), x)
+        self.assertAllClose(op_class()(x), np_op(x_np))
+        self.assertSameSparseness(op_class()(x), x)
+
     @parameterized.named_parameters(OTHER_UNARY_OPS_TESTS)
     def test_other_unary_sparse_correctness(
         self, op_function, op_class, np_op, init_kwargs, op_kwargs, input_shape
@@ -5023,23 +5074,33 @@ class SparseTest(testing.TestCase, parameterized.TestCase):
             x = create_sparse_tensor(x)
         x_np = backend.convert_to_numpy(x)
 
-        self.assertAllClose(
-            op_function(x, **init_kwargs, **op_kwargs),
-            np_op(x_np, **init_kwargs, **op_kwargs),
-        )
-        self.assertAllClose(
-            op_class(**init_kwargs)(x, **op_kwargs),
-            np_op(x_np, **init_kwargs, **op_kwargs),
-        )
+        result = np_op(x_np, **init_kwargs, **op_kwargs)
+        op_function_result = op_function(x, **init_kwargs, **op_kwargs)
+        op_class_result = op_class(**init_kwargs)(x, **op_kwargs)
+        self.assertAllClose(op_function_result, result)
+        self.assertAllClose(op_class_result, result)
         # Reduction operations have complex and backend dependent rules about
         # when the result is sparse and it is dense.
         if op_function is not knp.mean:
-            self.assertSameSparseness(
-                op_function(x, **init_kwargs, **op_kwargs), x
-            )
-            self.assertSameSparseness(
-                op_class(**init_kwargs)(x, **op_kwargs), x
-            )
+            self.assertSameSparseness(op_function_result, x)
+            self.assertSameSparseness(op_class_result, x)
+
+    @parameterized.named_parameters(OTHER_UNARY_OPS_TESTS)
+    def test_other_unary_ragged_correctness(
+        self, op_function, op_class, np_op, init_kwargs, op_kwargs, input_shape
+    ):
+        x = create_ragged_tensor(np.random.random(input_shape))
+        x_np = backend.convert_to_numpy(x)
+
+        result = np_op(x_np, **init_kwargs, **op_kwargs)
+        op_function_result = op_function(x, **init_kwargs, **op_kwargs)
+        op_class_result = op_class(**init_kwargs)(x, **op_kwargs)
+        self.assertAllClose(op_function_result, result)
+        self.assertAllClose(op_class_result, result)
+        # Reduction operations have complex rules about when they densify.
+        if op_function is not knp.mean:
+            self.assertSameSparseness(op_function_result, x)
+            self.assertSameSparseness(op_class_result, x)
 
     @parameterized.named_parameters(
         named_product(

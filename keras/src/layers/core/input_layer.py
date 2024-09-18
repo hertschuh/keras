@@ -14,13 +14,13 @@ class InputLayer(Layer):
         batch_size=None,
         dtype=None,
         sparse=None,
+        ragged=None,
         batch_shape=None,
         input_tensor=None,
         optional=False,
         name=None,
         **kwargs,
     ):
-        # TODO: support for ragged.
         super().__init__(name=name)
         if "input_shape" in kwargs:
             warnings.warn(
@@ -56,6 +56,13 @@ class InputLayer(Layer):
                 f"{backend.backend()}"
             )
 
+        self.ragged = bool(ragged)
+        if self.ragged and not backend.SUPPORTS_RAGGED_TENSORS:
+            raise ValueError(
+                "`ragged=True` is not supported with backend: "
+                f"{backend.backend()}"
+            )
+
         if input_tensor is not None:
             if not isinstance(input_tensor, backend.KerasTensor):
                 raise ValueError(
@@ -65,7 +72,7 @@ class InputLayer(Layer):
                 )
         else:
             input_tensor = backend.KerasTensor(
-                shape=batch_shape, dtype=dtype, sparse=sparse, name=name
+                shape=batch_shape, dtype=dtype, sparse=sparse, ragged=ragged, name=name
             )
         self._input_tensor = input_tensor
         Node(operation=self, call_args=(), call_kwargs={}, outputs=input_tensor)
@@ -88,6 +95,7 @@ class InputLayer(Layer):
             "batch_shape": self.batch_shape,
             "dtype": self.dtype,
             "sparse": self.sparse,
+            "ragged": self.ragged,
             "name": self.name,
         }
 
@@ -98,6 +106,7 @@ def Input(
     batch_size=None,
     dtype=None,
     sparse=None,
+    ragged=None,
     batch_shape=None,
     name=None,
     tensor=None,
@@ -125,6 +134,11 @@ def Input(
             (e.g. `"float32"`, `"int32"`...)
         sparse: A boolean specifying whether the expected input will be sparse
             tensors. Note that, if `sparse` is `False`, sparse tensors can still
+            be passed into the input - they will be densified with a default
+            value of 0. This feature is only supported with the TensorFlow and
+            the JAX backends. Defaults to `False`.
+        ragged: A boolean specifying whether the expected input will be ragged
+            tensors. Note that, if `ragged` is `False`, ragged tensors can still
             be passed into the input - they will be densified with a default
             value of 0. This feature is only supported with the TensorFlow
             backend. Defaults to `False`.
@@ -156,6 +170,7 @@ def Input(
         batch_size=batch_size,
         dtype=dtype,
         sparse=sparse,
+        ragged=ragged,
         batch_shape=batch_shape,
         name=name,
         input_tensor=tensor,

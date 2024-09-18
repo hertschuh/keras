@@ -620,7 +620,7 @@ class CoreOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllEqual(core.shape(x), (2, 3))
 
     @pytest.mark.skipif(
-        backend.backend() != "tensorflow",
+        not backend.SUPPORTS_SPARSE_TENSORS,
         reason="Backend does not support ragged tensors.",
     )
     def test_shape_ragged(self):
@@ -677,6 +677,29 @@ class CoreOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(x, x_sparse)
         x_dense = ops.convert_to_tensor(x, sparse=False)
         self.assertSparse(x_dense, False)
+        self.assertAllClose(x, x_dense)
+
+        x_numpy = ops.convert_to_numpy(x)
+        self.assertIsInstance(x_numpy, np.ndarray)
+        self.assertAllClose(x_numpy, x_dense)
+
+    @pytest.mark.skipif(
+        not backend.SUPPORTS_RAGGED_TENSORS,
+        reason="Backend does not support ragged tensors.",
+    )
+    def test_convert_to_tensor_ragged(self):
+        import tensorflow as tf
+ 
+        x = tf.ragged.constant([[3, 1, 4, 1], [], [5, 9, 2], [6], []])
+
+        x_default = ops.convert_to_tensor(x)
+        self.assertIsInstance(x_default, tf.RaggedTensor)
+        self.assertAllClose(x, x_default)
+        x_ragged = ops.convert_to_tensor(x, ragged=True)
+        self.assertIsInstance(x_ragged, tf.RaggedTensor)
+        self.assertAllClose(x, x_ragged)
+        x_dense = ops.convert_to_tensor(x, ragged=False)
+        self.assertNotIsInstance(x_dense, tf.RaggedTensor)
         self.assertAllClose(x, x_dense)
 
         x_numpy = ops.convert_to_numpy(x)

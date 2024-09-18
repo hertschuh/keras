@@ -397,3 +397,55 @@ class MergingLayersTest(testing.TestCase, parameterized.TestCase):
 
         self.assertSparse(layer([x1, x3]))
         self.assertAllClose(layer([x1, x3]), np_op(x1_np, x3_np, **init_kwargs))
+
+    @parameterized.named_parameters(TEST_PARAMETERS)
+    @pytest.mark.skipif(
+        not backend.SUPPORTS_RAGGED_TENSORS,
+        reason="Backend does not support ragged tensors.",
+    )
+    def test_ragged(
+        self,
+        layer_class,
+        np_op,
+        init_kwargs={},
+        input_shape=(2, 4, 5),
+        expected_output_shape=(2, 4, 5),
+        **kwargs,
+    ):
+        # self.run_layer_test(
+        #     layer_class,
+        #     init_kwargs=init_kwargs,
+        #     input_shape=[input_shape, input_shape],
+        #     input_sparse=True,
+        #     expected_output_shape=expected_output_shape,
+        #     expected_output_sparse=True,
+        #     expected_num_trainable_weights=0,
+        #     expected_num_non_trainable_weights=0,
+        #     expected_num_seed_generators=0,
+        #     expected_num_losses=0,
+        #     supports_masking=True,
+        #     run_training_check=False,
+        #     run_mixed_precision_check=False,
+        # )
+
+        layer = layer_class(**init_kwargs)
+
+        # Merging a sparse tensor with a dense tensor, or a dense tensor with a
+        # sparse tensor produces a dense tensor
+        import tensorflow as tf
+
+        x1 = tf.ragged.constant([[1.0], [2.0, 3.0, 4.0]])
+        x3 = tf.ragged.constant([[5.0, 6.0], []])
+
+        x1_np = backend.convert_to_numpy(x1)
+        x2 = np.random.rand(2, 3)
+        res = layer([x1, x2])
+        print("###", res)
+        self.assertAllClose(res, np_op(x1_np, x2, **init_kwargs))
+        self.assertAllClose(layer([x2, x1]), np_op(x2, x1_np, **init_kwargs))
+
+        # Merging a sparse tensor with a sparse tensor produces a sparse tensor
+        x3_np = backend.convert_to_numpy(x3)
+
+        self.assertIsInstance(layer([x1, x3]), tf.RaggedTensor)
+        self.assertAllClose(layer([x1, x3]), np_op(x1_np, x3_np, **init_kwargs))
