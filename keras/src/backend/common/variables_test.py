@@ -189,6 +189,12 @@ class VariablePropertiesTest(test_case.TestCase, parameterized.TestCase):
         x = torch.randn(4, 4)
         backend.standardize_dtype(x.dtype)
 
+    def test_standardize_dtype_with_numpy_string_dtype(self):
+        """Tests dtype standardization with NumPy string dtypes."""
+        x = np.arange(4).astype(np.str_)
+        actual = backend.standardize_dtype(x.dtype)
+        self.assertEqual(actual, "string")
+
     def test_name_validation(self):
         """Tests validation of variable names."""
         with self.assertRaisesRegex(

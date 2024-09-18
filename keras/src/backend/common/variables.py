@@ -495,6 +495,8 @@ def standardize_dtype(dtype):
     dtype = dtypes.PYTHON_DTYPES_MAP.get(dtype, dtype)
     if hasattr(dtype, "name"):
         dtype = dtype.name
+        if dtype.startswith("str"):
+            dtype = "string"
     elif hasattr(dtype, "__str__") and (
         "torch" in str(dtype) or "jax.numpy" in str(dtype)
     ):

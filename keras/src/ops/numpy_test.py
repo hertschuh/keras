@@ -4616,6 +4616,13 @@ class NumpyArrayCreateOpsCorrectnessTest(testing.TestCase):
             np.full([2, 3], np.array([1, 4, 5])),
         )
 
+    def test_full_string(self):
+        print("### knp", knp.full([2, 3], "a"))
+        print("### knp to np", backend.convert_to_numpy(knp.full([2, 3], "a")))
+        print("### np ", np.full([2, 3], "a", np.bytes_))
+        print("### equal", np.equal(backend.convert_to_numpy(knp.full([2, 3], "a")), np.full([2, 3], "a")))
+        self.assertTrue(np.all(np.equal(backend.convert_to_numpy(knp.full([2, 3], "a")), np.full([2, 3], "a"))))
+
     def test_identity(self):
         self.assertAllClose(knp.identity(3), np.identity(3))
         self.assertAllClose(knp.Identity()(3), np.identity(3))
@@ -5858,10 +5865,11 @@ class NumpyDtypeTest(testing.TestCase, parameterized.TestCase):
         ([[False], [True], [False]], "bool"),
         ([[1], [2], [3]], "int32"),
         ([[1], [2.0], [3]], backend.floatx()),
+        (["a", "b", "c"], "string"),
         *[
             (np.array(0, dtype=dtype), dtype)
             for dtype in ALL_DTYPES
-            if dtype is not None
+            if (dtype is not None and dtype != "string")
         ],
     )
     def test_array(self, x, expected_dtype):

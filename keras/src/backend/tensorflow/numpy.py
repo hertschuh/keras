@@ -1264,9 +1264,14 @@ def floor(x):
 
 
 def full(shape, fill_value, dtype=None):
-    dtype = dtype or config.floatx()
+    # dtype = dtype or config.floatx()
+    if dtype is None and not isinstance(fill_value, str):
+        dtype = config.floatx()
+    print("### fill_value before", fill_value)
     fill_value = convert_to_tensor(fill_value, dtype)
+    print("### fill_value after", fill_value)
     return tf.broadcast_to(fill_value, shape)
+    # return tf.fill(shape, fill_value)
 
 
 def full_like(x, fill_value, dtype=None):
