@@ -55,7 +55,6 @@ def get_model(type="sequential", input_shape=(10,), layer_list=None):
         "torch backends."
     ),
 )
-@pytest.mark.skipif(testing.jax_uses_gpu(), reason="Leads to core dumps on CI")
 @pytest.mark.skipif(
     testing.torch_uses_gpu(), reason="Leads to core dumps on CI"
 )
@@ -306,35 +305,6 @@ class ExportSavedModelTest(testing.TestCase):
                 model, temp_filepath, input_signature=input_signature
             )
 
-    @parameterized.named_parameters(
-        named_product(
-            model_type=["sequential", "functional", "subclass"],
-            is_static=(True, False),
-            jax2tf_kwargs=(
-                None,
-                {"enable_xla": True, "native_serialization": True},
-            ),
-        )
-    )
-    @pytest.mark.skipif(
-        backend.backend() != "jax",
-        reason="This test is only for the jax backend.",
-    )
-    def test_jax_specific_kwargs(self, model_type, is_static, jax2tf_kwargs):
-        temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
-        model = get_model(model_type)
-        ref_input = ops.random.uniform((3, 10))
-        ref_output = model(ref_input)
-
-        saved_model.export_saved_model(
-            model,
-            temp_filepath,
-            is_static=is_static,
-            jax2tf_kwargs=jax2tf_kwargs,
-        )
-        revived_model = tf.saved_model.load(temp_filepath)
-        self.assertAllClose(ref_output, revived_model.serve(ref_input))
-
 
 @pytest.mark.skipif(
     backend.backend()
@@ -345,7 +315,6 @@ class ExportSavedModelTest(testing.TestCase):
     ),
     reason="Export only currently supports the TF and JAX backends.",
 )
-@pytest.mark.skipif(testing.jax_uses_gpu(), reason="Leads to core dumps on CI")
 @pytest.mark.skipif(
     testing.torch_uses_gpu(), reason="Leads to core dumps on CI"
 )
@@ -465,25 +434,7 @@ class ExportArchiveTest(testing.TestCase):
             "call",
             model.__call__,
             input_signature=[tf.TensorSpec(shape=(None, 10), dtype=tf.float32)],
-            jax2tf_kwargs={
-                "native_serialization": True,
-                "native_serialization_platforms": ("cpu", "tpu"),
-            },
         )
-        with self.assertRaisesRegex(
-            ValueError, "native_serialization_platforms.*bogus"
-        ):
-            export_archive.add_endpoint(
-                "call2",
-                model.__call__,
-                input_signature=[
-                    tf.TensorSpec(shape=(None, 10), dtype=tf.float32)
-                ],
-                jax2tf_kwargs={
-                    "native_serialization": True,
-                    "native_serialization_platforms": ("cpu", "bogus"),
-                },
-            )
         export_archive.write_out(temp_filepath)
         revived_model = tf.saved_model.load(temp_filepath)
         self.assertAllClose(ref_output, revived_model.call(ref_input))
@@ -584,14 +535,9 @@ class ExportArchiveTest(testing.TestCase):
         from jax import default_backend as jax_device
         from jax.experimental import jax2tf
 
-        native_jax_compatible = not (
-            jax_device() == "gpu"
-            and len(tf.config.list_physical_devices("GPU")) == 0
-        )
         # now, convert JAX function
         converted_model_call = jax2tf.convert(
             model_call,
-            native_serialization=native_jax_compatible,
             polymorphic_shapes=["(b, 10)"],
         )
 
@@ -656,14 +602,9 @@ class ExportArchiveTest(testing.TestCase):
         from jax import default_backend as jax_device
         from jax.experimental import jax2tf
 
-        native_jax_compatible = not (
-            jax_device() == "gpu"
-            and len(tf.config.list_physical_devices("GPU")) == 0
-        )
         # now, convert JAX function
         converted_model_call = jax2tf.convert(
             model_call,
-            native_serialization=native_jax_compatible,
             polymorphic_shapes=["(b, t, 1)"],
         )
 

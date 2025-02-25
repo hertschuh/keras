@@ -46,10 +46,6 @@ class JaxExportArchive:
         is_static = bool(kwargs.pop("is_static", False))
 
         # Configure `jax2tf_kwargs`
-        if "native_serialization" not in jax2tf_kwargs:
-            jax2tf_kwargs["native_serialization"] = (
-                self._check_device_compatible()
-            )
         if "polymorphic_shapes" not in jax2tf_kwargs:
             jax2tf_kwargs["polymorphic_shapes"] = self._to_polymorphic_shape(
                 input_signature
@@ -162,23 +158,3 @@ class JaxExportArchive:
             return "(" + ", ".join(poly_shape) + ")"
 
         return tree.map_structure(convert_shape, struct)
-
-    def _check_device_compatible(self):
-        from jax import default_backend as jax_device
-
-        if (
-            jax_device() == "gpu"
-            and len(tf.config.list_physical_devices("GPU")) == 0
-        ):
-            warnings.warn(
-                "JAX backend is using GPU for export, but installed "
-                "TF package cannot access GPU, so reloading the model with "
-                "the TF runtime in the same environment will not work. "
-                "To use JAX-native serialization for high-performance export "
-                "and serving, please install `tensorflow-gpu` and ensure "
-                "CUDA version compatibility between your JAX and TF "
-                "installations."
-            )
-            return False
-        else:
-            return True

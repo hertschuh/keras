@@ -493,8 +493,8 @@ class Model(Trainer, base_trainer.Trainer, Layer):
                         `jax2tf.convert`. See the documentation for
                         [`jax2tf.convert`](
                             https://github.com/google/jax/blob/main/jax/experimental/jax2tf/README.md).
-                        If `native_serialization` and `polymorphic_shapes` are
-                        not provided, they will be automatically computed.
+                        If `polymorphic_shapes` is not provided, it will be
+                        automatically computed.
 
         **Note:** This feature is currently supported only with TensorFlow, JAX
         and Torch backends.

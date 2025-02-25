@@ -155,26 +155,9 @@ def _check_jax_kwargs(kwargs):
     kwargs = kwargs.copy()
     if "is_static" not in kwargs:
         kwargs["is_static"] = True
-    if "jax2tf_kwargs" not in kwargs:
-        # TODO: These options will be deprecated in JAX. We need to
-        # find another way to export ONNX.
-        kwargs["jax2tf_kwargs"] = {
-            "enable_xla": False,
-            "native_serialization": False,
-        }
     if kwargs["is_static"] is not True:
         raise ValueError(
             "`is_static` must be `True` in `kwargs` when using the jax backend."
-        )
-    if kwargs["jax2tf_kwargs"]["enable_xla"] is not False:
-        raise ValueError(
-            "`enable_xla` must be `False` in `kwargs['jax2tf_kwargs']` "
-            "when using the jax backend."
-        )
-    if kwargs["jax2tf_kwargs"]["native_serialization"] is not False:
-        raise ValueError(
-            "`native_serialization` must be `False` in "
-            "`kwargs['jax2tf_kwargs']` when using the jax backend."
         )
     return kwargs
 

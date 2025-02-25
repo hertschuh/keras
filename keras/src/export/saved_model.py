@@ -199,8 +199,8 @@ class ExportArchive(BackendExportArchive):
                     - `jax2tf_kwargs`: Optional `dict`. Arguments for
                         `jax2tf.convert`. See [`jax2tf.convert`](
                             https://github.com/google/jax/blob/main/jax/experimental/jax2tf/README.md).
-                        If `native_serialization` and `polymorphic_shapes` are
-                        not provided, they are automatically computed.
+                        If `polymorphic_shapes` is not provided, it will be
+                        automatically computed.
 
         Returns:
             The `tf.function` wrapping `fn` that was added to the archive.
@@ -391,8 +391,8 @@ class ExportArchive(BackendExportArchive):
                     - `jax2tf_kwargs`: Optional `dict`. Arguments for
                         `jax2tf.convert`. See [`jax2tf.convert`](
                             https://github.com/google/jax/blob/main/jax/experimental/jax2tf/README.md).
-                        If `native_serialization` and `polymorphic_shapes` are
-                        not provided, they are automatically computed.
+                        If `polymorphic_shapes` is not provided, it will be
+                        automatically computed.
 
         """
         if name in self._endpoint_names:
@@ -618,8 +618,8 @@ def export_saved_model(
                 - `jax2tf_kwargs`: Optional `dict`. Arguments for
                     `jax2tf.convert`. See [`jax2tf.convert`](
                         https://github.com/google/jax/blob/main/jax/experimental/jax2tf/README.md).
-                    If `native_serialization` and `polymorphic_shapes` are not
-                    provided, they are automatically computed.
+                    If `polymorphic_shapes` is not provided, it will be
+                    automatically computed.
 
     **Note:** This feature is currently supported only with TensorFlow, JAX and
     Torch backends. Support for the Torch backend is experimental.
