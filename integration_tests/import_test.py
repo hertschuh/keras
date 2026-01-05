@@ -10,7 +10,7 @@ BACKEND_REQ = {
     "tensorflow": ("tensorflow-cpu", ""),
     "torch": (
         "torch",
-        "--extra-index-url https://download.pytorch.org/whl/cpu ",
+        "--extra-index-url https://download.pytorch.org/whl/cpu/torch ",
     ),
     "jax": ("jax[cpu]", ""),
     "openvino": ("openvino", ""),
