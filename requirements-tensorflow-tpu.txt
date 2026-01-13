@@ -5,8 +5,8 @@ tensorflow-tpu==2.19.1
 tf2onnx
 
 # Torch cpu-only version (needed for testing).
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.9.1+cpu
+--extra-index-url https://download.pytorch.org/whl/cpu/torch
+torch==2.9.1+cu126
 
 # Jax cpu-only version (needed for testing).
 jax
