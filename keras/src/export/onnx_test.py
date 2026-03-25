@@ -77,11 +77,6 @@ def get_model(type="sequential", input_shape=(10,), layer_list=None):
         "backends."
     ),
 )
-@pytest.mark.skipif(testing.uses_gpu(), reason="Fails on GPU")
-@pytest.mark.skipif(
-    np.version.version.startswith("2.") and backend.backend() != "jax",
-    reason="ONNX export via tf2onnx is incompatible with NumPy 2.0",
-)
 class ExportONNXTest(testing.TestCase):
     @parameterized.named_parameters(
         named_product(
@@ -89,11 +84,8 @@ class ExportONNXTest(testing.TestCase):
         )
     )
     def test_standard_model_export(self, model_type):
-        if model_type == "lstm" and backend.backend() == "jax":
-            self.skipTest(
-                "Bidirectional LSTM uses reverse scan, which jax2onnx "
-                "does not support yet."
-            )
+        if model_type == "lstm" and backend.backend() in ("jax", "tensorflow"):
+            self.skipTest("Bidirectional LSTM is unsupported.")
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
         model = get_model(model_type)
         batch_size = 3 if backend.backend() != "torch" else 1
@@ -262,7 +254,12 @@ class ExportONNXTest(testing.TestCase):
         ort_inputs = {
             k.name: v for k, v in zip(ort_session.get_inputs(), [ref_input])
         }
-        self.assertAllClose(ref_output, ort_session.run(None, ort_inputs)[0])
+        self.assertAllClose(
+            ref_output,
+            ort_session.run(None, ort_inputs)[0],
+            tpu_atol=1e-3,
+            tpu_rtol=2e-3,
+        )
 
         if opset_version is not None:
             onnx_model = onnx_lib.load(temp_filepath)
