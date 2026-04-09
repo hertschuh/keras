@@ -114,7 +114,7 @@ jobs:
       - name: Run Tests
         if: ${{ matrix.nnx_enabled == false }}
         run: |
-          pytest keras --ignore keras/src/applications --cov=keras --cov-config=pyproject.toml $PYTEST_ARGS
+          pytest keras -n auto --dist loadfile --ignore keras/src/applications --cov=keras --cov-config=pyproject.toml
           coverage xml --omit='keras/src/applications/*,keras/api' -o core-coverage.xml
 
       - name: Run Multi-Device Tests
