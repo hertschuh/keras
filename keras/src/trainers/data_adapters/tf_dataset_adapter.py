@@ -1,3 +1,5 @@
+import numpy as np
+
 from keras.src import tree
 from keras.src.trainers.data_adapters import data_adapter_utils
 from keras.src.trainers.data_adapters.data_adapter import DataAdapter
@@ -43,15 +45,15 @@ class TFDatasetAdapter(DataAdapter):
             )
 
     def get_jax_iterator(self):
-        from keras.src.backend.tensorflow.core import convert_to_numpy
         from keras.src.utils.module_utils import tensorflow as tf
 
         def convert_to_jax(x):
             if isinstance(x, tf.SparseTensor):
                 return data_adapter_utils.tf_sparse_to_jax_sparse(x)
-            else:
-                # We use numpy as an intermediary because it is faster.
-                return convert_to_numpy(x)
+            if isinstance(x, tf.RaggedTensor):
+                x = x.to_tensor()
+            # We use numpy as an intermediary because it is faster.
+            return np.asarray(x)
 
         for batch in self._dataset:
             yield tree.map_structure(convert_to_jax, batch, none_is_leaf=False)
